@@ -1,6 +1,6 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "pdf_extractor_scanner",
+    "short_name": "pdf_extractor_scanner",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

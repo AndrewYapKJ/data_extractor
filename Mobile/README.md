@@ -1,4 +1,4 @@
-# mobile
+# pdf_extractor_scanner
 
 A new Flutter project.
 
