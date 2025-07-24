@@ -4,9 +4,41 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../controllers/file_controller.dart';
 import '../models/file_item_model.dart';
+import '../widgets/pdf_viewer_screen.dart';
 
 class FilesView extends StatelessWidget {
   const FilesView({super.key});
+  static Future<void> convertToPDF(BuildContext context, FileItem file) async {
+    try {
+      final fileController = Provider.of<FileController>(
+        context,
+        listen: false,
+      );
+      final success = await fileController.convertImageToPDF(file.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Image converted to PDF successfully!'
+                  : 'Failed to convert image to PDF',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error converting to PDF: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _showDeleteDialog(BuildContext context, FileItem file) async {
     return showDialog<void>(
@@ -100,9 +132,21 @@ class FilesView extends StatelessWidget {
   }
 
   void _showFilePreview(BuildContext context, FileItem file) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => FilePreviewScreen(file: file)),
-    );
+    if (file.type == FileType.pdf) {
+      // Navigate to PDF viewer screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  PDFViewerScreen(pdfPath: file.path, title: file.name),
+        ),
+      );
+    } else {
+      // Navigate to regular file preview screen
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => FilePreviewScreen(file: file)),
+      );
+    }
   }
 
   Future<void> _shareFile(BuildContext context, FileItem file) async {
@@ -338,6 +382,13 @@ class _FileCard extends StatelessWidget {
                     onPressed: onDelete,
                     tooltip: 'Delete file',
                   ),
+                  if (file.type == FileType.image)
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf),
+                      color: Colors.green,
+                      onPressed: () => FilesView.convertToPDF(context, file),
+                      tooltip: 'Convert to PDF',
+                    ),
                 ],
               ),
             ],
@@ -448,6 +499,12 @@ class FilePreviewScreen extends StatelessWidget {
               onPressed: () => _extractText(context),
               tooltip: 'Extract text',
             ),
+          if (file.type == FileType.image)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              onPressed: () => FilesView.convertToPDF(context, file),
+              tooltip: 'Convert to PDF',
+            ),
         ],
       ),
       body: Center(
@@ -476,10 +533,10 @@ class FilePreviewScreen extends StatelessWidget {
                 : const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
+                    Icon(Icons.description, size: 64, color: Colors.grey),
                     SizedBox(height: 16),
                     Text(
-                      'PDF Preview',
+                      'File Preview',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -487,7 +544,7 @@ class FilePreviewScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'PDF preview not available.\nFile is stored in cache.',
+                      'Preview not available for this file type.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey),
                     ),

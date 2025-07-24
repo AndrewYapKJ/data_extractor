@@ -1,10 +1,10 @@
 class ExtractedText {
-  final String id;
-  final String sourceFileId;
-  final String text;
-  final DateTime extractedDate;
-  final double confidence;
-  final Map<String, dynamic>? metadata;
+  String id;
+  String sourceFileId;
+  String text;
+  DateTime extractedDate;
+  double confidence;
+  Map<String, dynamic>? metadata;
 
   ExtractedText({
     required this.id,

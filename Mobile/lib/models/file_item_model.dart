@@ -3,12 +3,12 @@ import 'dart:io';
 enum FileType { image, pdf }
 
 class FileItem {
-  final String id;
-  final String name;
-  final String path;
-  final FileType type;
-  final DateTime uploadDate;
-  final int size;
+  String id;
+  String name;
+  String path;
+  FileType type;
+  DateTime uploadDate;
+  int size;
 
   FileItem({
     required this.id,
