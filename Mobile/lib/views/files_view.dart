@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../controllers/file_controller.dart';
 import '../models/file_item_model.dart';
+import '../utils/screen_utils.dart';
 import '../widgets/pdf_viewer_screen.dart';
 
 class FilesView extends StatelessWidget {
@@ -243,20 +244,30 @@ class FilesView extends StatelessWidget {
           }
 
           if (fileController.files.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.folder_open, size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
+                  Icon(
+                    Icons.folder_open,
+                    size: AppSizes.extraLargeIcon * 1.67,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: AppSizes.md),
                   Text(
                     'No files yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: AppSizes.subtitle,
+                      color: Colors.grey,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: AppSizes.sm),
                   Text(
                     'Take a photo or upload files to get started',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: AppSizes.bodySmall,
+                      color: Colors.grey,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -270,7 +281,7 @@ class FilesView extends StatelessWidget {
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppSizes.md),
               itemCount: fileController.files.length,
               itemBuilder: (context, index) {
                 final file = fileController.files[index];
@@ -308,35 +319,37 @@ class _FileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: AppSizes.xs * 3),
       elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.largeRadius),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSizes.largeRadius),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppSizes.md),
           child: Row(
             children: [
               // File icon
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(AppSizes.xs * 3),
                 decoration: BoxDecoration(
                   color:
                       file.type == FileType.image
                           ? Colors.blue.withOpacity(0.1)
                           : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSizes.radius),
                 ),
                 child: Icon(
                   file.type == FileType.image
                       ? Icons.image
                       : Icons.picture_as_pdf,
                   color: file.type == FileType.image ? Colors.blue : Colors.red,
-                  size: 24,
+                  size: AppSizes.icon,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: AppSizes.md),
               // File info
               Expanded(
                 child: Column(
@@ -344,17 +357,20 @@ class _FileCard extends StatelessWidget {
                   children: [
                     Text(
                       file.name,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: AppSizes.bodyText,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: AppSizes.xs),
                     Text(
                       '${file.formattedSize} • ${_formatDate(file.uploadDate)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: AppSizes.captionText,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),

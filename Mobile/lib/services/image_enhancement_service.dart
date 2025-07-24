@@ -77,7 +77,9 @@ class ImageEnhancementService {
       }
 
       if (kDebugMode) {
-        print('OpenCV enhancement failed, falling back to standard enhancement');
+        print(
+          'OpenCV enhancement failed, falling back to standard enhancement',
+        );
       }
 
       // Fallback to standard enhancement
@@ -94,7 +96,7 @@ class ImageEnhancementService {
   static Future<File?> _enhanceWithOpenCV(File documentImage) async {
     try {
       final imageBytes = await documentImage.readAsBytes();
-      
+
       // Convert to OpenCV Mat
       final mat = cv.imdecode(imageBytes, cv.IMREAD_COLOR);
       if (mat.isEmpty) {
@@ -129,7 +131,7 @@ class ImageEnhancementService {
 
       // Encode back to bytes
       final (success, resultBytes) = cv.imencode('.jpg', result);
-      
+
       if (!success) {
         if (kDebugMode) {
           print('Failed to encode OpenCV result');
@@ -221,12 +223,16 @@ class ImageEnhancementService {
     denoised = img.gaussianBlur(denoised, radius: 1);
 
     // 2. Median filter effect using resize and blur combination
-    final smaller = img.copyResize(denoised, 
-        width: (denoised.width * 0.98).round(),
-        height: (denoised.height * 0.98).round());
-    denoised = img.copyResize(smaller, 
-        width: denoised.width, 
-        height: denoised.height);
+    final smaller = img.copyResize(
+      denoised,
+      width: (denoised.width * 0.98).round(),
+      height: (denoised.height * 0.98).round(),
+    );
+    denoised = img.copyResize(
+      smaller,
+      width: denoised.width,
+      height: denoised.height,
+    );
 
     return denoised;
   }
@@ -241,7 +247,7 @@ class ImageEnhancementService {
   static img.Image _applyHistogramEqualization(img.Image image) {
     // Convert to grayscale if not already
     final grayImage = img.grayscale(image);
-    
+
     // Apply histogram stretching
     return img.contrast(grayImage, contrast: 1.3);
   }
@@ -249,20 +255,21 @@ class ImageEnhancementService {
   /// Apply adaptive contrast enhancement
   static img.Image _applyAdaptiveContrast(img.Image image) {
     // Apply local contrast enhancement
-    return img.adjustColor(image, 
-        contrast: 1.4, 
-        brightness: 1.1,
-        gamma: 0.9);
+    return img.adjustColor(image, contrast: 1.4, brightness: 1.1, gamma: 0.9);
   }
 
   /// Apply unsharp masking for better text clarity
   static img.Image _applyUnsharpMask(img.Image image) {
     // Apply sharpening by increasing contrast (simulated unsharp masking)
-    img.Image result = img.copyResize(image, width: image.width, height: image.height);
-    
+    img.Image result = img.copyResize(
+      image,
+      width: image.width,
+      height: image.height,
+    );
+
     // Apply sharpening by increasing contrast
     result = img.adjustColor(result, contrast: 1.2);
-    
+
     return result;
   }
 
@@ -270,30 +277,32 @@ class ImageEnhancementService {
   static img.Image _applyAdvancedSharpening(img.Image image) {
     // Multiple-pass sharpening
     img.Image sharpened = image;
-    
+
     // First pass: light sharpening
     sharpened = img.adjustColor(sharpened, contrast: 1.15);
-    
+
     // Second pass: edge enhancement
     sharpened = img.adjustColor(sharpened, contrast: 1.1, saturation: 0.8);
-    
+
     return sharpened;
   }
 
   /// Final tuning adjustments
   static img.Image _finalTuning(img.Image image) {
     // Final adjustments for optimal OCR
-    return img.adjustColor(image, 
-        contrast: 1.05, 
-        brightness: 1.02,
-        saturation: 0.95);
+    return img.adjustColor(
+      image,
+      contrast: 1.05,
+      brightness: 1.02,
+      saturation: 0.95,
+    );
   }
 
   /// Resize image to optimal size for OCR with better scaling
   static img.Image _resizeForOCR(img.Image image) {
-    const int targetWidth = 1600;  // Increased for better OCR
+    const int targetWidth = 1600; // Increased for better OCR
     const int targetHeight = 1200;
-    const int minWidth = 1000;     // Increased minimum
+    const int minWidth = 1000; // Increased minimum
     const int minHeight = 750;
 
     int width = image.width;
@@ -325,10 +334,12 @@ class ImageEnhancementService {
     }
 
     if (width != image.width || height != image.height) {
-      return img.copyResize(image, 
-          width: width, 
-          height: height,
-          interpolation: img.Interpolation.cubic);
+      return img.copyResize(
+        image,
+        width: width,
+        height: height,
+        interpolation: img.Interpolation.cubic,
+      );
     }
 
     return image;

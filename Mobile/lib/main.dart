@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/file_controller.dart';
@@ -19,16 +20,23 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => FileController()),
       ],
-      child: MaterialApp(
-        title: 'PDF Extractor Scanner',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
-        ),
-        home: const AuthWrapper(),
-        routes: {
-          '/login': (context) => const LoginView(),
-          '/home': (context) => const HomeView(),
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812), // iPhone 11 Pro design size
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return MaterialApp(
+            title: 'PDF Extractor Scanner',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+              useMaterial3: true,
+            ),
+            home: const AuthWrapper(),
+            routes: {
+              '/login': (context) => const LoginView(),
+              '/home': (context) => const HomeView(),
+            },
+          );
         },
       ),
     );

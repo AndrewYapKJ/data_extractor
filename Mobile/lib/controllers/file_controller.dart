@@ -753,7 +753,8 @@ class FileController extends ChangeNotifier {
   }
 
   /// Test image enhancement on an existing image file
-  Future<FileItem?> testImageEnhancement(String fileId, {
+  Future<FileItem?> testImageEnhancement(
+    String fileId, {
     bool useOpenCV = true,
     bool saveResult = true,
   }) async {
@@ -774,7 +775,9 @@ class FileController extends ChangeNotifier {
       // Test enhancement
       File? enhancedFile;
       if (useOpenCV) {
-        enhancedFile = await ImageEnhancementService.enhanceDocumentImage(originalFile);
+        enhancedFile = await ImageEnhancementService.enhanceDocumentImage(
+          originalFile,
+        );
       } else {
         enhancedFile = await ImageEnhancementService.enhanceImage(originalFile);
       }
@@ -831,11 +834,15 @@ class FileController extends ChangeNotifier {
       }
 
       // Extract text from original image
-      final originalText = await TextExtractionService.extractTextFromImage(originalFile);
+      final originalText = await TextExtractionService.extractTextFromImage(
+        originalFile,
+      );
 
       // Enhance the image
-      final enhancedFile = await ImageEnhancementService.enhanceDocumentImage(originalFile);
-      
+      final enhancedFile = await ImageEnhancementService.enhanceDocumentImage(
+        originalFile,
+      );
+
       if (enhancedFile == null) {
         if (kDebugMode) {
           print('Image enhancement failed');
@@ -844,11 +851,15 @@ class FileController extends ChangeNotifier {
       }
 
       // Extract text from enhanced image
-      final enhancedText = await TextExtractionService.extractTextFromImage(enhancedFile);
+      final enhancedText = await TextExtractionService.extractTextFromImage(
+        enhancedFile,
+      );
 
       // Compare results
-      final originalWordCount = originalText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-      final enhancedWordCount = enhancedText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final originalWordCount =
+          originalText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final enhancedWordCount =
+          enhancedText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
       final comparison = {
         'originalText': originalText,
@@ -860,22 +871,38 @@ class FileController extends ChangeNotifier {
         'improvement': {
           'wordCountDiff': enhancedWordCount - originalWordCount,
           'lengthDiff': enhancedText.length - originalText.length,
-          'wordCountImprovement': originalWordCount > 0 ? 
-              ((enhancedWordCount - originalWordCount) / originalWordCount * 100).toStringAsFixed(1) + '%' : 
-              'N/A',
-          'lengthImprovement': originalText.length > 0 ? 
-              ((enhancedText.length - originalText.length) / originalText.length * 100).toStringAsFixed(1) + '%' : 
-              'N/A',
+          'wordCountImprovement':
+              originalWordCount > 0
+                  ? ((enhancedWordCount - originalWordCount) /
+                              originalWordCount *
+                              100)
+                          .toStringAsFixed(1) +
+                      '%'
+                  : 'N/A',
+          'lengthImprovement':
+              originalText.length > 0
+                  ? ((enhancedText.length - originalText.length) /
+                              originalText.length *
+                              100)
+                          .toStringAsFixed(1) +
+                      '%'
+                  : 'N/A',
         },
         'enhancedFilePath': enhancedFile.path,
       };
 
       if (kDebugMode) {
         print('OCR Comparison Results:');
-        print('Original words: $originalWordCount, Enhanced words: $enhancedWordCount');
-        print('Original length: ${originalText.length}, Enhanced length: ${enhancedText.length}');
+        print(
+          'Original words: $originalWordCount, Enhanced words: $enhancedWordCount',
+        );
+        print(
+          'Original length: ${originalText.length}, Enhanced length: ${enhancedText.length}',
+        );
         final improvement = comparison['improvement'] as Map<String, dynamic>?;
-        print('Word count improvement: ${improvement?['wordCountImprovement']}');
+        print(
+          'Word count improvement: ${improvement?['wordCountImprovement']}',
+        );
         print('Text length improvement: ${improvement?['lengthImprovement']}');
       }
 
@@ -902,8 +929,9 @@ class FileController extends ChangeNotifier {
       setLoading(true);
 
       // Capture with edge detection first
-      final scannedImagePath = await EdgeDetectionService.captureWithEdgeDetection();
-      
+      final scannedImagePath =
+          await EdgeDetectionService.captureWithEdgeDetection();
+
       if (scannedImagePath == null) {
         return null;
       }
@@ -923,17 +951,21 @@ class FileController extends ChangeNotifier {
       if (enhanceImage) {
         File? enhanced;
         if (useOpenCVEnhancement) {
-          enhanced = await ImageEnhancementService.enhanceDocumentImage(scannedFile);
+          enhanced = await ImageEnhancementService.enhanceDocumentImage(
+            scannedFile,
+          );
         } else {
           enhanced = await ImageEnhancementService.enhanceImage(scannedFile);
         }
-        
+
         if (enhanced != null) {
           processedFile = enhanced;
-          
+
           // Save intermediate step if requested
           if (saveIntermediateSteps) {
-            final enhancedFileItem = await _createFileItemFromPath(enhanced.path);
+            final enhancedFileItem = await _createFileItemFromPath(
+              enhanced.path,
+            );
             enhancedFileItem.name = 'enhanced_${enhancedFileItem.name}';
             _files.add(enhancedFileItem);
           }
@@ -944,7 +976,9 @@ class FileController extends ChangeNotifier {
       String? extractedText;
       if (extractText) {
         try {
-          extractedText = await TextExtractionService.extractTextFromImage(processedFile);
+          extractedText = await TextExtractionService.extractTextFromImage(
+            processedFile,
+          );
           if (kDebugMode) {
             print('Extracted text length: ${extractedText.length} characters');
           }
@@ -963,7 +997,7 @@ class FileController extends ChangeNotifier {
             // Create PDF with both image and text
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final fileName = 'enhanced_document_$timestamp.pdf';
-            
+
             final pdfFile = await PDFGenerationService.generateCombinedPDF(
               imageFiles: [processedFile],
               extractedText: extractedText,
@@ -973,7 +1007,9 @@ class FileController extends ChangeNotifier {
             pdfPath = pdfFile.path;
           } else {
             // Create PDF with just the image
-            pdfPath = await PDFGenerationService.createPDFFromImage(processedFile.path);
+            pdfPath = await PDFGenerationService.createPDFFromImage(
+              processedFile.path,
+            );
           }
 
           if (pdfPath != null) {
@@ -989,9 +1025,16 @@ class FileController extends ChangeNotifier {
                 extractedDate: DateTime.now(),
                 confidence: 0.9,
                 metadata: {
-                  'wordCount': extractedText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
+                  'wordCount':
+                      extractedText
+                          .split(RegExp(r'\s+'))
+                          .where((w) => w.isNotEmpty)
+                          .length,
                   'characterCount': extractedText.length,
-                  'processingMethod': useOpenCVEnhancement ? 'OpenCV + ML Kit' : 'Standard + ML Kit',
+                  'processingMethod':
+                      useOpenCVEnhancement
+                          ? 'OpenCV + ML Kit'
+                          : 'Standard + ML Kit',
                   'enhancementUsed': enhanceImage,
                 },
               );

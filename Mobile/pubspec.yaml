@@ -46,6 +46,7 @@ dependencies:
   
   # UI components
   cached_network_image: ^3.3.1
+  flutter_screenutil: ^5.9.3
   
   # Utilities
   shared_preferences: ^2.2.2

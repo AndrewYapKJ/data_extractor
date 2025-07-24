@@ -10,7 +10,7 @@ class EdgeDetectionService {
   static final ImagePicker _imagePicker = ImagePicker();
 
   /// Check if ML Kit Document Scanner is available (Android only)
-  static bool get isMLKitAvailable => Platform.isAndroid;
+  static bool get isMLKitAvailable => true; //Platform.isAndroid;
 
   /// Capture image with automatic edge detection using Google ML Kit Document Scanner
   static Future<String?> captureWithEdgeDetection() async {

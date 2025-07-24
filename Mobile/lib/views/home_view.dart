@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/file_controller.dart';
 import '../models/file_item_model.dart';
+import '../utils/screen_utils.dart';
 import '../widgets/pdf_viewer_screen.dart';
 import 'files_view.dart';
 import 'text_extraction_view.dart';
@@ -308,11 +309,13 @@ class HomePage extends StatelessWidget {
 
   Future<void> _showEnhancementDebugDialog(BuildContext context) async {
     final fileController = Provider.of<FileController>(context, listen: false);
-    
+
     if (fileController.files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No files available for testing. Capture an image first.'),
+          content: Text(
+            'No files available for testing. Capture an image first.',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -320,12 +323,15 @@ class HomePage extends StatelessWidget {
     }
 
     // Show dialog to select file for enhancement testing
-    final imageFiles = fileController.files.where((f) => f.type == FileType.image).toList();
-    
+    final imageFiles =
+        fileController.files.where((f) => f.type == FileType.image).toList();
+
     if (imageFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No image files available for testing. Capture an image first.'),
+          content: Text(
+            'No image files available for testing. Capture an image first.',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -334,81 +340,111 @@ class HomePage extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Test Image Enhancement'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: Column(
-            children: [
-              const Text('Select an image to test enhancement:'),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: imageFiles.length,
-                  itemBuilder: (context, index) {
-                    final file = imageFiles[index];
-                    return ListTile(
-                      leading: const Icon(Icons.image, color: Colors.blue),
-                      title: Text(file.name),
-                      subtitle: Text(file.formattedSize),
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        
-                        // Show options for enhancement
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Enhancement Options'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  title: const Text('OpenCV Enhancement'),
-                                  subtitle: const Text('Advanced document processing'),
-                                  leading: const Icon(Icons.auto_fix_high, color: Colors.green),
-                                  onTap: () async {
-                                    Navigator.of(context).pop();
-                                    await _testImageEnhancement(context, file.id, true);
-                                  },
-                                ),
-                                ListTile(
-                                  title: const Text('Standard Enhancement'),
-                                  subtitle: const Text('Basic image processing'),
-                                  leading: const Icon(Icons.tune, color: Colors.blue),
-                                  onTap: () async {
-                                    Navigator.of(context).pop();
-                                    await _testImageEnhancement(context, file.id, false);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Test Image Enhancement'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: ScreenUtils.height(300),
+              child: Column(
+                children: [
+                  const Text('Select an image to test enhancement:'),
+                  SizedBox(height: AppSizes.md),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: imageFiles.length,
+                      itemBuilder: (context, index) {
+                        final file = imageFiles[index];
+                        return ListTile(
+                          leading: const Icon(Icons.image, color: Colors.blue),
+                          title: Text(file.name),
+                          subtitle: Text(file.formattedSize),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+
+                            // Show options for enhancement
+                            showDialog(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text('Enhancement Options'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          title: const Text(
+                                            'OpenCV Enhancement',
+                                          ),
+                                          subtitle: const Text(
+                                            'Advanced document processing',
+                                          ),
+                                          leading: const Icon(
+                                            Icons.auto_fix_high,
+                                            color: Colors.green,
+                                          ),
+                                          onTap: () async {
+                                            Navigator.of(context).pop();
+                                            await _testImageEnhancement(
+                                              context,
+                                              file.id,
+                                              true,
+                                            );
+                                          },
+                                        ),
+                                        ListTile(
+                                          title: const Text(
+                                            'Standard Enhancement',
+                                          ),
+                                          subtitle: const Text(
+                                            'Basic image processing',
+                                          ),
+                                          leading: const Icon(
+                                            Icons.tune,
+                                            color: Colors.blue,
+                                          ),
+                                          onTap: () async {
+                                            Navigator.of(context).pop();
+                                            await _testImageEnhancement(
+                                              context,
+                                              file.id,
+                                              false,
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
-  Future<void> _testImageEnhancement(BuildContext context, String fileId, bool useOpenCV) async {
+  Future<void> _testImageEnhancement(
+    BuildContext context,
+    String fileId,
+    bool useOpenCV,
+  ) async {
     final fileController = Provider.of<FileController>(context, listen: false);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Testing ${useOpenCV ? 'OpenCV' : 'standard'} enhancement...'),
+        content: Text(
+          'Testing ${useOpenCV ? 'OpenCV' : 'standard'} enhancement...',
+        ),
         backgroundColor: Colors.blue,
       ),
     );
@@ -435,11 +471,13 @@ class HomePage extends StatelessWidget {
 
   Future<void> _showOCRComparisonDialog(BuildContext context) async {
     final fileController = Provider.of<FileController>(context, listen: false);
-    
+
     if (fileController.files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No files available for comparison. Capture an image first.'),
+          content: Text(
+            'No files available for comparison. Capture an image first.',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -447,12 +485,15 @@ class HomePage extends StatelessWidget {
     }
 
     // Show dialog to select file for OCR comparison
-    final imageFiles = fileController.files.where((f) => f.type == FileType.image).toList();
-    
+    final imageFiles =
+        fileController.files.where((f) => f.type == FileType.image).toList();
+
     if (imageFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No image files available for comparison. Capture an image first.'),
+          content: Text(
+            'No image files available for comparison. Capture an image first.',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -461,48 +502,54 @@ class HomePage extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Compare OCR Results'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: Column(
-            children: [
-              const Text('Select an image to compare OCR before/after enhancement:'),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: imageFiles.length,
-                  itemBuilder: (context, index) {
-                    final file = imageFiles[index];
-                    return ListTile(
-                      leading: const Icon(Icons.image, color: Colors.blue),
-                      title: Text(file.name),
-                      subtitle: Text(file.formattedSize),
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        await _performOCRComparison(context, file.id);
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Compare OCR Results'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: ScreenUtils.height(300),
+              child: Column(
+                children: [
+                  const Text(
+                    'Select an image to compare OCR before/after enhancement:',
+                  ),
+                  SizedBox(height: AppSizes.md),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: imageFiles.length,
+                      itemBuilder: (context, index) {
+                        final file = imageFiles[index];
+                        return ListTile(
+                          leading: const Icon(Icons.image, color: Colors.blue),
+                          title: Text(file.name),
+                          subtitle: Text(file.formattedSize),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            await _performOCRComparison(context, file.id);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
-  Future<void> _performOCRComparison(BuildContext context, String fileId) async {
+  Future<void> _performOCRComparison(
+    BuildContext context,
+    String fileId,
+  ) async {
     final fileController = Provider.of<FileController>(context, listen: false);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Comparing OCR results... This may take a moment.'),
@@ -518,7 +565,9 @@ class HomePage extends StatelessWidget {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('OCR comparison failed. Check debug console for details.'),
+            content: Text(
+              'OCR comparison failed. Check debug console for details.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -526,119 +575,142 @@ class HomePage extends StatelessWidget {
     }
   }
 
-  void _showOCRComparisonResults(BuildContext context, Map<String, dynamic> comparison) {
+  void _showOCRComparisonResults(
+    BuildContext context,
+    Map<String, dynamic> comparison,
+  ) {
     final improvement = comparison['improvement'] as Map<String, dynamic>;
-    
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('OCR Comparison Results'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Summary',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Original words: ${comparison['originalWordCount']}'),
-                        Text('Enhanced words: ${comparison['enhancedWordCount']}'),
-                        Text('Word count improvement: ${improvement['wordCountImprovement']}'),
-                        const SizedBox(height: 8),
-                        Text('Original text length: ${comparison['originalLength']}'),
-                        Text('Enhanced text length: ${comparison['enhancedLength']}'),
-                        Text('Length improvement: ${improvement['lengthImprovement']}'),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Original Text',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 100,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Text(
-                              comparison['originalText'] as String? ?? 'No text found',
-                              style: const TextStyle(fontSize: 12),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('OCR Comparison Results'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: ScreenUtils.height(400),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSizes.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Summary',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Enhanced Text',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 100,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Text(
-                              comparison['enhancedText'] as String? ?? 'No text found',
-                              style: const TextStyle(fontSize: 12),
+                            SizedBox(height: AppSizes.sm),
+                            Text(
+                              'Original words: ${comparison['originalWordCount']}',
                             ),
-                          ),
+                            Text(
+                              'Enhanced words: ${comparison['enhancedWordCount']}',
+                            ),
+                            Text(
+                              'Word count improvement: ${improvement['wordCountImprovement']}',
+                            ),
+                            SizedBox(height: AppSizes.sm),
+                            Text(
+                              'Original text length: ${comparison['originalLength']}',
+                            ),
+                            Text(
+                              'Enhanced text length: ${comparison['enhancedLength']}',
+                            ),
+                            Text(
+                              'Length improvement: ${improvement['lengthImprovement']}',
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    SizedBox(height: AppSizes.md),
+                    Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSizes.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Original Text',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: AppSizes.sm),
+                            Container(
+                              height: ScreenUtils.height(100),
+                              padding: EdgeInsets.all(AppSizes.sm),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.smallRadius,
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                child: Text(
+                                  comparison['originalText'] as String? ??
+                                      'No text found',
+                                  style: TextStyle(
+                                    fontSize: AppSizes.captionText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: AppSizes.md),
+                    Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSizes.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Enhanced Text',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: AppSizes.sm),
+                            Container(
+                              height: ScreenUtils.height(100),
+                              padding: EdgeInsets.all(AppSizes.sm),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.smallRadius,
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                child: Text(
+                                  comparison['enhancedText'] as String? ??
+                                      'No text found',
+                                  style: TextStyle(
+                                    fontSize: AppSizes.captionText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -845,7 +917,7 @@ class _ActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppSizes.sm),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -860,8 +932,8 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: AppSizes.captionText,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -869,7 +941,10 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: AppSizes.sm,
+                  color: Colors.grey[600],
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

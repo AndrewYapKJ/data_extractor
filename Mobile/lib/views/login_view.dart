@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/auth_controller.dart';
+import '../utils/screen_utils.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -24,8 +25,11 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      final authController = Provider.of<AuthController>(context, listen: false);
-      
+      final authController = Provider.of<AuthController>(
+        context,
+        listen: false,
+      );
+
       final success = await authController.login(
         _usernameController.text.trim(),
         _passwordController.text,
@@ -53,7 +57,7 @@ class _LoginViewState extends State<LoginView> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(AppSizes.lg),
             child: Form(
               key: _formKey,
               child: Column(
@@ -61,44 +65,46 @@ class _LoginViewState extends State<LoginView> {
                 children: [
                   // App Logo/Title
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(AppSizes.lg - 4),
                     decoration: BoxDecoration(
                       color: Colors.blue,
-                      borderRadius: BorderRadius.circular(50),
+                      borderRadius: BorderRadius.circular(
+                        AppSizes.circularRadius,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.document_scanner,
-                      size: 50,
+                      size: AppSizes.circularRadius,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  const Text(
+                  SizedBox(height: AppSizes.xl),
+                  Text(
                     'PDF Extractor Scanner',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: AppSizes.largeHeading,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: AppSizes.sm),
+                  Text(
                     'Sign in to continue',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppSizes.bodyText,
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 48),
-                  
+                  SizedBox(height: AppSizes.xxl),
+
                   // Login Form
                   Card(
                     elevation: 8,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppSizes.md),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(AppSizes.lg),
                       child: Column(
                         children: [
                           TextFormField(
@@ -154,7 +160,8 @@ class _LoginViewState extends State<LoginView> {
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: authController.isLoading ? null : _login,
+                                  onPressed:
+                                      authController.isLoading ? null : _login,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue,
                                     foregroundColor: Colors.white,
@@ -162,17 +169,18 @@ class _LoginViewState extends State<LoginView> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  child: authController.isLoading
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white,
-                                        )
-                                      : const Text(
-                                          'Sign In',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                  child:
+                                      authController.isLoading
+                                          ? const CircularProgressIndicator(
+                                            color: Colors.white,
+                                          )
+                                          : const Text(
+                                            'Sign In',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
                                 ),
                               );
                             },
@@ -182,7 +190,7 @@ class _LoginViewState extends State<LoginView> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Test credentials info
                   Container(
                     padding: const EdgeInsets.all(16),
