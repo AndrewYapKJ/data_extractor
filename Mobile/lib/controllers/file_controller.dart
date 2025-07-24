@@ -13,15 +13,20 @@ import '../services/pdf_generation_service.dart';
 
 class FileController extends ChangeNotifier {
   List<FileItem> _files = [];
+  List<ExtractedText> _extractedTexts = [];
   bool _isLoading = false;
+  bool _isExtracting = false;
 
   List<FileItem> get files => _files;
+  List<ExtractedText> get extractedTexts => _extractedTexts;
   bool get isLoading => _isLoading;
+  bool get isExtracting => _isExtracting;
 
   final ImagePicker _imagePicker = ImagePicker();
 
   FileController() {
     _loadSavedFiles();
+    _loadExtractedTexts();
   }
 
   Future<void> _loadSavedFiles() async {
@@ -31,12 +36,15 @@ class FileController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final filesJson = prefs.getStringList('saved_files') ?? [];
-      
-      _files = filesJson
-          .map((jsonStr) => FileItem.fromJson(json.decode(jsonStr)))
-          .where((file) => File(file.path).existsSync()) // Only include existing files
-          .toList();
-      
+
+      _files =
+          filesJson
+              .map((jsonStr) => FileItem.fromJson(json.decode(jsonStr)))
+              .where(
+                (file) => File(file.path).existsSync(),
+              ) // Only include existing files
+              .toList();
+
       // Sort by upload date, newest first
       _files.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
     } catch (e) {
@@ -52,7 +60,8 @@ class FileController extends ChangeNotifier {
   Future<void> _saveFiles() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final filesJson = _files.map((file) => json.encode(file.toJson())).toList();
+      final filesJson =
+          _files.map((file) => json.encode(file.toJson())).toList();
       await prefs.setStringList('saved_files', filesJson);
     } catch (e) {
       if (kDebugMode) {
@@ -63,7 +72,9 @@ class FileController extends ChangeNotifier {
 
   Future<String> _getCacheDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
-    final cacheDir = Directory(path.join(directory.path, 'pdf_extractor_cache'));
+    final cacheDir = Directory(
+      path.join(directory.path, 'pdf_extractor_cache'),
+    );
     if (!await cacheDir.exists()) {
       await cacheDir.create(recursive: true);
     }
@@ -114,10 +125,13 @@ class FileController extends ChangeNotifier {
 
   Future<bool> uploadPDF() async {
     try {
-      file_picker.FilePickerResult? result = await file_picker.FilePicker.platform.pickFiles(
-        type: file_picker.FileType.custom,
-        allowedExtensions: ['pdf'],
-      );
+      file_picker.FilePickerResult? result = await file_picker
+          .FilePicker
+          .platform
+          .pickFiles(
+            type: file_picker.FileType.custom,
+            allowedExtensions: ['pdf'],
+          );
 
       if (result != null && result.files.single.path != null) {
         final file = File(result.files.single.path!);
@@ -165,29 +179,272 @@ class FileController extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteFile(String fileId) async {
+  Future<void> _loadExtractedTexts() async {
     try {
-      final fileIndex = _files.indexWhere((file) => file.id == fileId);
-      if (fileIndex != -1) {
-        final file = _files[fileIndex];
-        
-        // Delete physical file
-        if (await File(file.path).exists()) {
-          await File(file.path).delete();
-        }
-        
-        // Remove from list
-        _files.removeAt(fileIndex);
-        await _saveFiles();
+      final prefs = await SharedPreferences.getInstance();
+      final textsJson = prefs.getStringList('extracted_texts') ?? [];
+
+      _extractedTexts =
+          textsJson
+              .map((jsonStr) => ExtractedText.fromJson(json.decode(jsonStr)))
+              .toList();
+
+      // Sort by extraction date, newest first
+      _extractedTexts.sort(
+        (a, b) => b.extractedDate.compareTo(a.extractedDate),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading extracted texts: $e');
+      }
+    }
+  }
+
+  Future<void> _saveExtractedTexts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final textsJson =
+          _extractedTexts.map((text) => json.encode(text.toJson())).toList();
+      await prefs.setStringList('extracted_texts', textsJson);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving extracted texts: $e');
+      }
+    }
+  }
+
+  /// Extract text from an image file
+  Future<ExtractedText?> extractTextFromFile(String fileId) async {
+    try {
+      _isExtracting = true;
+      notifyListeners();
+
+      final file = _files.firstWhere((f) => f.id == fileId);
+      if (file.type != FileType.image) {
+        throw Exception('Text extraction is only supported for images');
+      }
+
+      final extractedText = await TextExtractionService.extractTextFromImage(
+        File(file.path),
+      );
+      final textDetails = await TextExtractionService.getTextRecognitionDetails(
+        File(file.path),
+      );
+
+      final extractedTextModel = ExtractedText(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        sourceFileId: fileId,
+        text: extractedText,
+        extractedDate: DateTime.now(),
+        confidence: textDetails['averageConfidence'] ?? 0.0,
+        metadata: {
+          'totalBlocks': textDetails['totalBlocks'],
+          'totalElements': textDetails['totalElements'],
+          'sourceFileName': file.name,
+        },
+      );
+
+      _extractedTexts.insert(0, extractedTextModel);
+      await _saveExtractedTexts();
+
+      _isExtracting = false;
+      notifyListeners();
+
+      return extractedTextModel;
+    } catch (e) {
+      _isExtracting = false;
+      notifyListeners();
+      if (kDebugMode) {
+        print('Error extracting text: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Extract text from multiple image files
+  Future<ExtractedText?> extractTextFromMultipleFiles(
+    List<String> fileIds,
+  ) async {
+    try {
+      _isExtracting = true;
+      notifyListeners();
+
+      final imageFiles =
+          fileIds
+              .map((id) => _files.firstWhere((f) => f.id == id))
+              .where((file) => file.type == FileType.image)
+              .map((file) => File(file.path))
+              .toList();
+
+      if (imageFiles.isEmpty) {
+        throw Exception('No valid image files found');
+      }
+
+      final extractedText =
+          await TextExtractionService.extractTextFromMultipleImages(imageFiles);
+
+      final extractedTextModel = ExtractedText(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        sourceFileId: fileIds.join(','),
+        text: extractedText,
+        extractedDate: DateTime.now(),
+        metadata: {
+          'sourceFileCount': imageFiles.length,
+          'sourceFileIds': fileIds,
+        },
+      );
+
+      _extractedTexts.insert(0, extractedTextModel);
+      await _saveExtractedTexts();
+
+      _isExtracting = false;
+      notifyListeners();
+
+      return extractedTextModel;
+    } catch (e) {
+      _isExtracting = false;
+      notifyListeners();
+      if (kDebugMode) {
+        print('Error extracting text from multiple files: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Generate PDF from extracted text
+  Future<FileItem?> generatePDFFromText(
+    String extractedTextId, {
+    String? title,
+  }) async {
+    try {
+      final extractedText = _extractedTexts.firstWhere(
+        (t) => t.id == extractedTextId,
+      );
+
+      final fileName =
+          title ?? 'extracted_text_${DateTime.now().millisecondsSinceEpoch}';
+      final pdfFile = await PDFGenerationService.generatePDFFromText(
+        text: extractedText.text,
+        fileName: fileName,
+        title: title,
+      );
+
+      return await _saveExistingFile(pdfFile, FileType.pdf);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error generating PDF from text: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Generate PDF from images with optional text
+  Future<FileItem?> generatePDFFromImages(
+    List<String> fileIds, {
+    String? title,
+    bool includeExtractedText = false,
+  }) async {
+    try {
+      final imageFiles =
+          fileIds
+              .map((id) => _files.firstWhere((f) => f.id == id))
+              .where((file) => file.type == FileType.image)
+              .map((file) => File(file.path))
+              .toList();
+
+      if (imageFiles.isEmpty) {
+        throw Exception('No valid image files found');
+      }
+
+      final fileName =
+          title ?? 'images_pdf_${DateTime.now().millisecondsSinceEpoch}';
+      File pdfFile;
+
+      if (includeExtractedText) {
+        // Extract text first
+        final extractedText =
+            await TextExtractionService.extractTextFromMultipleImages(
+              imageFiles,
+            );
+        pdfFile = await PDFGenerationService.generateCombinedPDF(
+          imageFiles: imageFiles,
+          extractedText: extractedText,
+          fileName: fileName,
+          title: title,
+        );
+      } else {
+        pdfFile = await PDFGenerationService.generatePDFFromImages(
+          imageFiles: imageFiles,
+          fileName: fileName,
+          title: title,
+        );
+      }
+
+      return await _saveExistingFile(pdfFile, FileType.pdf);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error generating PDF from images: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Delete extracted text
+  Future<bool> deleteExtractedText(String textId) async {
+    try {
+      final textIndex = _extractedTexts.indexWhere((text) => text.id == textId);
+      if (textIndex != -1) {
+        _extractedTexts.removeAt(textIndex);
+        await _saveExtractedTexts();
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
       if (kDebugMode) {
-        print('Error deleting file: $e');
+        print('Error deleting extracted text: $e');
       }
       return false;
+    }
+  }
+
+  /// Clear all extracted texts
+  Future<void> clearAllExtractedTexts() async {
+    try {
+      _extractedTexts.clear();
+      await _saveExtractedTexts();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error clearing extracted texts: $e');
+      }
+    }
+  }
+
+  /// Save an existing file (like generated PDF) to the file list
+  Future<FileItem?> _saveExistingFile(File file, FileType type) async {
+    try {
+      final fileStats = await file.stat();
+      final fileName = path.basename(file.path);
+
+      final fileItem = FileItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: fileName,
+        path: file.path,
+        type: type,
+        uploadDate: DateTime.now(),
+        size: fileStats.size,
+      );
+
+      _files.insert(0, fileItem);
+      await _saveFiles();
+      notifyListeners();
+      return fileItem;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving existing file: $e');
+      }
+      return null;
     }
   }
 
@@ -199,14 +456,47 @@ class FileController extends ChangeNotifier {
           await File(file.path).delete();
         }
       }
-      
+
       _files.clear();
+      _extractedTexts.clear();
       await _saveFiles();
+      await _saveExtractedTexts();
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
         print('Error clearing files: $e');
       }
+    }
+  }
+
+  Future<bool> deleteFile(String fileId) async {
+    try {
+      final fileIndex = _files.indexWhere((file) => file.id == fileId);
+      if (fileIndex != -1) {
+        final file = _files[fileIndex];
+
+        // Delete physical file
+        if (await File(file.path).exists()) {
+          await File(file.path).delete();
+        }
+
+        // Remove from list
+        _files.removeAt(fileIndex);
+
+        // Also remove any related extracted texts
+        _extractedTexts.removeWhere((text) => text.sourceFileId == fileId);
+
+        await _saveFiles();
+        await _saveExtractedTexts();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting file: $e');
+      }
+      return false;
     }
   }
 }

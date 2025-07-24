@@ -13,10 +13,12 @@ class TextExtractionService {
       }
 
       final inputImage = InputImage.fromFile(imageFile);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      final RecognizedText recognizedText = await _textRecognizer.processImage(
+        inputImage,
+      );
 
       StringBuffer extractedText = StringBuffer();
-      
+
       for (TextBlock block in recognizedText.blocks) {
         for (TextLine line in block.lines) {
           extractedText.writeln(line.text);
@@ -33,9 +35,11 @@ class TextExtractionService {
   }
 
   /// Extract text from multiple images and combine them
-  static Future<String> extractTextFromMultipleImages(List<File> imageFiles) async {
+  static Future<String> extractTextFromMultipleImages(
+    List<File> imageFiles,
+  ) async {
     StringBuffer combinedText = StringBuffer();
-    
+
     for (int i = 0; i < imageFiles.length; i++) {
       try {
         final text = await extractTextFromImage(imageFiles[i]);
@@ -50,15 +54,19 @@ class TextExtractionService {
         }
       }
     }
-    
+
     return combinedText.toString().trim();
   }
 
   /// Get text recognition confidence for an image
-  static Future<Map<String, dynamic>> getTextRecognitionDetails(File imageFile) async {
+  static Future<Map<String, dynamic>> getTextRecognitionDetails(
+    File imageFile,
+  ) async {
     try {
       final inputImage = InputImage.fromFile(imageFile);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      final RecognizedText recognizedText = await _textRecognizer.processImage(
+        inputImage,
+      );
 
       List<Map<String, dynamic>> blocks = [];
       double totalConfidence = 0;
@@ -66,10 +74,10 @@ class TextExtractionService {
 
       for (TextBlock block in recognizedText.blocks) {
         List<Map<String, dynamic>> lines = [];
-        
+
         for (TextLine line in block.lines) {
           List<Map<String, dynamic>> elements = [];
-          
+
           for (TextElement element in line.elements) {
             elements.add({
               'text': element.text,
@@ -84,22 +92,17 @@ class TextExtractionService {
             totalConfidence += element.confidence ?? 0;
             elementCount++;
           }
-          
-          lines.add({
-            'text': line.text,
-            'elements': elements,
-          });
+
+          lines.add({'text': line.text, 'elements': elements});
         }
-        
-        blocks.add({
-          'text': block.text,
-          'lines': lines,
-        });
+
+        blocks.add({'text': block.text, 'lines': lines});
       }
 
       return {
         'fullText': recognizedText.text,
-        'averageConfidence': elementCount > 0 ? totalConfidence / elementCount : 0,
+        'averageConfidence':
+            elementCount > 0 ? totalConfidence / elementCount : 0,
         'blocks': blocks,
         'totalBlocks': blocks.length,
         'totalElements': elementCount,

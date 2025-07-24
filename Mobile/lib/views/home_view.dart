@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/file_controller.dart';
 import 'files_view.dart';
+import 'text_extraction_view.dart';
+import 'settings_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -13,10 +15,12 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   int _currentIndex = 0;
-  
+
   final List<Widget> _pages = [
     const HomePage(),
     const FilesView(),
+    const TextExtractionView(),
+    const SettingsView(),
   ];
 
   @override
@@ -24,6 +28,7 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
@@ -31,13 +36,12 @@ class _HomeViewState extends State<HomeView> {
           });
         },
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.folder), label: 'Files'),
+          BottomNavigationBarItem(icon: Icon(Icons.text_fields), label: 'Text'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder),
-            label: 'Files',
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
@@ -67,7 +71,10 @@ class HomePage extends StatelessWidget {
               child: const Text('Logout'),
               onPressed: () async {
                 Navigator.of(context).pop();
-                final authController = Provider.of<AuthController>(context, listen: false);
+                final authController = Provider.of<AuthController>(
+                  context,
+                  listen: false,
+                );
                 await authController.logout();
                 if (context.mounted) {
                   Navigator.of(context).pushReplacementNamed('/login');
@@ -83,11 +90,15 @@ class HomePage extends StatelessWidget {
   Future<void> _takePhoto(BuildContext context) async {
     final fileController = Provider.of<FileController>(context, listen: false);
     final success = await fileController.takePhoto();
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Photo captured successfully!' : 'Failed to capture photo'),
+          content: Text(
+            success
+                ? 'Photo captured successfully!'
+                : 'Failed to capture photo',
+          ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -97,11 +108,13 @@ class HomePage extends StatelessWidget {
   Future<void> _uploadPhoto(BuildContext context) async {
     final fileController = Provider.of<FileController>(context, listen: false);
     final success = await fileController.uploadPhoto();
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Photo uploaded successfully!' : 'Failed to upload photo'),
+          content: Text(
+            success ? 'Photo uploaded successfully!' : 'Failed to upload photo',
+          ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -111,15 +124,23 @@ class HomePage extends StatelessWidget {
   Future<void> _uploadPDF(BuildContext context) async {
     final fileController = Provider.of<FileController>(context, listen: false);
     final success = await fileController.uploadPDF();
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'PDF uploaded successfully!' : 'Failed to upload PDF'),
+          content: Text(
+            success ? 'PDF uploaded successfully!' : 'Failed to upload PDF',
+          ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
     }
+  }
+
+  void _navigateToTextExtraction(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const TextExtractionView()));
   }
 
   @override
@@ -138,27 +159,28 @@ class HomePage extends StatelessWidget {
                     _showLogoutDialog(context);
                   }
                 },
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'user',
-                    enabled: false,
-                    child: Text(
-                      'Welcome, ${authController.currentUser?.username ?? 'User'}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem<String>(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout),
-                        SizedBox(width: 8),
-                        Text('Logout'),
-                      ],
-                    ),
-                  ),
-                ],
+                itemBuilder:
+                    (BuildContext context) => [
+                      PopupMenuItem<String>(
+                        value: 'user',
+                        enabled: false,
+                        child: Text(
+                          'Welcome, ${authController.currentUser?.username ?? 'User'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout),
+                            SizedBox(width: 8),
+                            Text('Logout'),
+                          ],
+                        ),
+                      ),
+                    ],
               );
             },
           ),
@@ -171,10 +193,7 @@ class HomePage extends StatelessWidget {
           children: [
             const Text(
               'Actions',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -204,6 +223,13 @@ class HomePage extends StatelessWidget {
                     color: Colors.red,
                     onTap: () => _uploadPDF(context),
                   ),
+                  _ActionCard(
+                    icon: Icons.text_fields,
+                    title: 'Extract Text',
+                    subtitle: 'OCR from images',
+                    color: Colors.purple,
+                    onTap: () => _navigateToTextExtraction(context),
+                  ),
                   Consumer<FileController>(
                     builder: (context, fileController, child) {
                       return _ActionCard(
@@ -219,6 +245,18 @@ class HomePage extends StatelessWidget {
                             ),
                           );
                         },
+                      );
+                    },
+                  ),
+                  Consumer<FileController>(
+                    builder: (context, fileController, child) {
+                      return _ActionCard(
+                        icon: Icons.insights,
+                        title: 'Extracted Text',
+                        subtitle:
+                            '${fileController.extractedTexts.length} items',
+                        color: Colors.teal,
+                        onTap: () => _navigateToTextExtraction(context),
                       );
                     },
                   ),
@@ -251,9 +289,7 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -268,11 +304,7 @@ class _ActionCard extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(50),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
+                child: Icon(icon, size: 32, color: color),
               ),
               const SizedBox(height: 12),
               Text(
@@ -286,10 +318,7 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
             ],

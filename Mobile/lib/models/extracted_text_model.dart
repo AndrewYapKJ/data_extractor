@@ -56,7 +56,7 @@ class ExtractedText {
   }
 
   bool get hasText => text.trim().isNotEmpty;
-  
+
   String get formattedDate {
     final now = DateTime.now();
     final difference = now.difference(extractedDate);

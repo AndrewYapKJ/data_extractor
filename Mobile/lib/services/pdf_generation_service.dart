@@ -37,10 +37,7 @@ class PDFGenerationService {
             ],
             pw.Paragraph(
               text: text,
-              style: const pw.TextStyle(
-                fontSize: 12,
-                lineSpacing: 1.5,
-              ),
+              style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
             ),
           ];
         },
@@ -60,16 +57,16 @@ class PDFGenerationService {
 
     for (int i = 0; i < imageFiles.length; i++) {
       final imageFile = imageFiles[i];
-      
+
       try {
         final imageBytes = await imageFile.readAsBytes();
         final image = img.decodeImage(imageBytes);
-        
+
         if (image != null) {
           // Resize image if too large
           final resizedImage = _resizeImage(image, 800, 1000);
           final resizedBytes = Uint8List.fromList(img.encodePng(resizedImage));
-          
+
           pdf.addPage(
             pw.Page(
               pageFormat: PdfPageFormat.a4,
@@ -90,10 +87,7 @@ class PDFGenerationService {
                     ],
                     pw.Text(
                       'Page ${i + 1} of ${imageFiles.length}',
-                      style: pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfColors.grey,
-                      ),
+                      style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
                     ),
                     pw.SizedBox(height: 10),
                     pw.Expanded(
@@ -151,26 +145,20 @@ class PDFGenerationService {
             ],
             pw.Text(
               'Extracted Text',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 10),
             pw.Paragraph(
-              text: extractedText.isNotEmpty ? extractedText : 'No text extracted',
-              style: const pw.TextStyle(
-                fontSize: 12,
-                lineSpacing: 1.5,
-              ),
+              text:
+                  extractedText.isNotEmpty
+                      ? extractedText
+                      : 'No text extracted',
+              style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
             ),
             pw.SizedBox(height: 30),
             pw.Text(
               'Source Images',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
             ),
           ];
         },
@@ -180,15 +168,15 @@ class PDFGenerationService {
     // Add images
     for (int i = 0; i < imageFiles.length; i++) {
       final imageFile = imageFiles[i];
-      
+
       try {
         final imageBytes = await imageFile.readAsBytes();
         final image = img.decodeImage(imageBytes);
-        
+
         if (image != null) {
           final resizedImage = _resizeImage(image, 800, 1000);
           final resizedBytes = Uint8List.fromList(img.encodePng(resizedImage));
-          
+
           pdf.addPage(
             pw.Page(
               pageFormat: PdfPageFormat.a4,
@@ -238,12 +226,13 @@ class PDFGenerationService {
     }
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final finalFileName = fileName.endsWith('.pdf') ? fileName : '$fileName.pdf';
+    final finalFileName =
+        fileName.endsWith('.pdf') ? fileName : '$fileName.pdf';
     final filePath = path.join(pdfDir.path, '${timestamp}_$finalFileName');
-    
+
     final file = File(filePath);
     await file.writeAsBytes(await pdf.save());
-    
+
     return file;
   }
 
@@ -251,18 +240,18 @@ class PDFGenerationService {
   static img.Image _resizeImage(img.Image image, int maxWidth, int maxHeight) {
     int width = image.width;
     int height = image.height;
-    
+
     if (width <= maxWidth && height <= maxHeight) {
       return image;
     }
-    
+
     double widthRatio = maxWidth / width;
     double heightRatio = maxHeight / height;
     double ratio = widthRatio < heightRatio ? widthRatio : heightRatio;
-    
+
     int newWidth = (width * ratio).round();
     int newHeight = (height * ratio).round();
-    
+
     return img.copyResize(image, width: newWidth, height: newHeight);
   }
 }
